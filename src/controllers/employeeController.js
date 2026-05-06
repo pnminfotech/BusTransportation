@@ -20,13 +20,13 @@ function buildEmployeeQuery(query) {
     ];
   }
 
-  ["companyName", "division", "employmentType", "routeId", "stopId", "status"].forEach((key) => {
+  ["companyName", "division", "routeId", "stopId", "status"].forEach((key) => {
     if (query[key]) {
       filter[key] = query[key];
     }
   });
 
-  if (!query.status) {
+  if (!query.status && query.includePending !== "true") {
     filter.status = "active";
   }
 
@@ -69,15 +69,71 @@ export const deleteEmployee = asyncHandler(async (req, res) => {
 });
 
 export const shiftEmployee = asyncHandler(async (req, res) => {
+  const currentEmployee = await Employee.findById(req.params.id).populate("routeId", "monitorIds");
+
+  if (!currentEmployee) {
+    throw new ApiError(404, "Employee not found");
+  }
+
+  const nextRouteId = req.body.routeId ? String(req.body.routeId) : "";
+  const currentRouteId = currentEmployee.routeId?._id ? String(currentEmployee.routeId._id) : "";
+  let nextStatus;
+  let message = "Employee route updated successfully";
+
+  if (nextRouteId && nextRouteId !== currentRouteId) {
+    const targetRoute = await Route.findById(nextRouteId).select("monitorIds").lean();
+
+    if (!targetRoute) {
+      throw new ApiError(404, "Selected route not found");
+    }
+
+    if ((targetRoute.monitorIds || []).length) {
+      nextStatus = "pending_verification";
+      message = "Employee route updated. The newly assigned monitor must approve this employee before they appear in that monitor's table.";
+    }
+  }
+
   const employee = await shiftEmployeeAssignment({
     employeeId: req.params.id,
     routeId: req.body.routeId,
     stopId: req.body.stopId,
     note: req.body.note || "Assignment updated",
+    changedBy: { userId: req.user.id, role: req.user.role },
+    status: nextStatus
+  });
+
+  res.json({ success: true, data: employee, message });
+});
+
+export const shiftMonitorEmployee = asyncHandler(async (req, res) => {
+  const monitor = await Monitor.findById(req.user.id).lean();
+  const assignedRouteIds = (monitor?.assignedRoutes || []).map(String);
+  const employee = await Employee.findById(req.params.id).lean();
+
+  if (!employee) {
+    throw new ApiError(404, "Employee not found");
+  }
+
+  const currentRouteId = employee.routeId ? String(employee.routeId) : "";
+  const nextRouteId = req.body.routeId ? String(req.body.routeId) : "";
+
+  if (!currentRouteId || !assignedRouteIds.includes(currentRouteId)) {
+    throw new ApiError(403, "You can only shift employees from your assigned routes");
+  }
+
+  if (!nextRouteId || !assignedRouteIds.includes(nextRouteId)) {
+    throw new ApiError(403, "You can only shift employees to your assigned routes");
+  }
+
+  const shiftedEmployee = await shiftEmployeeAssignment({
+    employeeId: req.params.id,
+    routeId: req.body.routeId,
+    stopId: req.body.stopId,
+    note: req.body.note || "Employee route shifted by monitor",
     changedBy: { userId: req.user.id, role: req.user.role }
   });
 
-  res.json({ success: true, data: employee });
+  res.json({ success: true, data: shiftedEmployee });
 });
 
 export const getMonitorEmployees = asyncHandler(async (req, res) => {

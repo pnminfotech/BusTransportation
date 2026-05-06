@@ -6,7 +6,8 @@ import { updateMonitorRoute } from "../controllers/routeController.js";
 import {
   getMonitorEmployees,
   updateEmployeeRemarks,
-  approveMonitorEmployee
+  approveMonitorEmployee,
+  shiftMonitorEmployee
 } from "../controllers/employeeController.js";
 import { createRouteChangeRequest, getRequests } from "../controllers/requestController.js";
 import { Monitor } from "../models/Monitor.js";
@@ -52,6 +53,7 @@ router.get("/summary", getMonitorSummary);
 router.get("/employees", getMonitorEmployees);
 router.patch("/employees/:id/remarks", updateEmployeeRemarks);
 router.patch("/employees/:id/approve", approveMonitorEmployee);
+router.patch("/employees/:id/shift", shiftMonitorEmployee);
 router.post("/requests", createRouteChangeRequest);
 router.get("/requests", getRequests);
 

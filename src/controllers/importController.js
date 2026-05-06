@@ -8,7 +8,6 @@ function normalizeImportRow(row) {
   return {
     companyName: row.companyName,
     division: row.division,
-    employmentType: row.employmentType,
     employeeCode: row.employeeCode,
     employeeName: row.employeeName,
     residentAddress: row.residentAddress,
@@ -62,7 +61,6 @@ export const importEmployees = asyncHandler(async (req, res) => {
     await Employee.create({
       companyName: row.companyName,
       division: row.division,
-      employmentType: row.employmentType,
       employeeCode: row.employeeCode,
       employeeName: row.employeeName,
       residentAddress: row.residentAddress,

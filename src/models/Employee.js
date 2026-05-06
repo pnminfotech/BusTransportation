@@ -20,9 +20,9 @@ const employeeSchema = new mongoose.Schema(
   {
     companyName: { type: String, required: true, trim: true },
     division: { type: String, required: true, trim: true },
-    employmentType: { type: String, required: true, trim: true },
     employeeCode: { type: String, required: true, trim: true },
     employeeName: { type: String, required: true, trim: true },
+    gender: { type: String, trim: true, enum: ["Male", "Female"], default: "" },
     residentAddress: { type: String, required: true, trim: true },
     contactNumber: { type: String, required: true, trim: true },
     officialEmail: { type: String, required: true, trim: true, lowercase: true },

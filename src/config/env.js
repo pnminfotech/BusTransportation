@@ -14,5 +14,17 @@ export const env = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "1d",
   adminName: process.env.ADMIN_NAME || "Transport Admin",
   adminEmail: process.env.ADMIN_EMAIL || "admin@example.com",
-  adminPassword: process.env.ADMIN_PASSWORD || "Admin@123"
+  adminPassword: process.env.ADMIN_PASSWORD || "Admin@123",
+  mailFrom: process.env.MAIL_FROM || process.env.SMTP_USER || "no-reply@example.com",
+  smtpHost: process.env.SMTP_HOST || "",
+  smtpPort: Number(process.env.SMTP_PORT || 0),
+  smtpSecure: process.env.SMTP_SECURE === "true",
+  smtpUser: process.env.SMTP_USER || "",
+  smtpPass: process.env.SMTP_PASS || "",
+  reportAdminEmails: process.env.REPORT_ADMIN_EMAILS || process.env.ADMIN_EMAIL || "",
+  reportAdminCcEmails: process.env.REPORT_ADMIN_CC_EMAILS || "",
+  monthlyReportSchedulerEnabled: process.env.MONTHLY_REPORT_SCHEDULER_ENABLED !== "false",
+  monthlyReportCron: process.env.MONTHLY_REPORT_CRON || "0 8 1 * *",
+  monthlyReportMode: process.env.MONTHLY_REPORT_MODE === "company-wise" ? "company-wise" : "consolidated",
+  monthlyReportTargetMonth: process.env.MONTHLY_REPORT_TARGET_MONTH === "current" ? "current" : "previous"
 };

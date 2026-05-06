@@ -29,13 +29,25 @@ const fallbackStops = [
   "LIC Chowk"
 ];
 
-export const getPublicFormOptions = asyncHandler(async (_req, res) => {
+export const getPublicFormOptions = asyncHandler(async (req, res) => {
+  const routeFilter = { status: "active" };
+  const requestedRouteId = String(req.query.routeId || "").trim();
+
+  if (requestedRouteId) {
+    routeFilter._id = requestedRouteId;
+  }
+
   const [routes, stops] = await Promise.all([
-    Route.find({ status: "active" })
+    Route.find(routeFilter)
       .populate("stopIds", "stopName stopOrder")
       .sort({ routeCode: 1 })
       .lean(),
-    Stop.find({ status: "active" }).sort({ stopOrder: 1, stopName: 1 }).lean()
+    Stop.find({
+      status: "active",
+      ...(requestedRouteId ? { routeId: requestedRouteId } : {})
+    })
+      .sort({ stopOrder: 1, stopName: 1 })
+      .lean()
   ]);
 
   const routeOptions = routes.length
@@ -61,7 +73,6 @@ export const getPublicFormOptions = asyncHandler(async (_req, res) => {
     data: {
       companies: ["GIL", "DANA", "MATS", "AAPL"],
       divisions: ["Head Office", "Axle Plant", "Gear Plant"],
-      employmentTypes: ["SOC", "Contract"],
       routes: routeOptions,
       stops: stopOptions
     }
@@ -72,9 +83,9 @@ export const submitPublicEmployeeRegistration = asyncHandler(async (req, res) =>
   const {
     companyName,
     division,
-    employmentType,
     employeeCode,
     employeeName,
+    gender,
     residentAddress,
     contactNumber,
     officialEmail,
@@ -86,9 +97,9 @@ export const submitPublicEmployeeRegistration = asyncHandler(async (req, res) =>
   const requiredFields = [
     ["companyName", companyName],
     ["division", division],
-    ["employmentType", employmentType],
     ["employeeCode", employeeCode],
     ["employeeName", employeeName],
+    ["gender", gender],
     ["residentAddress", residentAddress],
     ["contactNumber", contactNumber],
     ["officialEmail", officialEmail],
@@ -146,9 +157,9 @@ export const submitPublicEmployeeRegistration = asyncHandler(async (req, res) =>
   const employee = await Employee.create({
     companyName,
     division,
-    employmentType,
     employeeCode: normalizedEmployeeCode,
     employeeName,
+    gender,
     residentAddress,
     contactNumber: normalizedContactNumber,
     officialEmail: normalizedEmail,

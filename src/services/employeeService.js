@@ -6,7 +6,8 @@ export async function shiftEmployeeAssignment({
   routeId,
   stopId,
   note,
-  changedBy
+  changedBy,
+  status
 }) {
   const employee = await Employee.findById(employeeId);
 
@@ -29,6 +30,10 @@ export async function shiftEmployeeAssignment({
 
   if (stopId) {
     employee.stopId = stopId;
+  }
+
+  if (status) {
+    employee.status = status;
   }
 
   await employee.save();

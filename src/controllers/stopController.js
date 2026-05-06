@@ -4,8 +4,36 @@ import { Monitor } from "../models/Monitor.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 
+async function assertUniqueStopOrder(routeId, stopOrder, excludeStopId = null) {
+  const normalizedStopOrder = Number(stopOrder);
+
+  if (!routeId) {
+    throw new ApiError(400, "routeId is required");
+  }
+
+  if (!normalizedStopOrder || normalizedStopOrder < 1) {
+    throw new ApiError(400, "Stop order must be 1 or greater");
+  }
+
+  const existingStop = await Stop.findOne({
+    routeId,
+    stopOrder: normalizedStopOrder,
+    ...(excludeStopId ? { _id: { $ne: excludeStopId } } : {})
+  }).lean();
+
+  if (existingStop) {
+    throw new ApiError(409, `Stop order ${normalizedStopOrder} already exists for this route`);
+  }
+
+  return normalizedStopOrder;
+}
+
 export const createStop = asyncHandler(async (req, res) => {
-  const stop = await Stop.create(req.body);
+  const normalizedStopOrder = await assertUniqueStopOrder(req.body.routeId, req.body.stopOrder);
+  const stop = await Stop.create({
+    ...req.body,
+    stopOrder: normalizedStopOrder
+  });
   await Route.findByIdAndUpdate(stop.routeId, { $addToSet: { stopIds: stop._id } });
   res.status(201).json({ success: true, data: stop });
 });
@@ -23,7 +51,11 @@ export const createMonitorStop = asyncHandler(async (req, res) => {
     throw new ApiError(403, "You can only create stops for your assigned routes");
   }
 
-  const stop = await Stop.create(req.body);
+  const normalizedStopOrder = await assertUniqueStopOrder(req.body.routeId, req.body.stopOrder);
+  const stop = await Stop.create({
+    ...req.body,
+    stopOrder: normalizedStopOrder
+  });
   await Route.findByIdAndUpdate(stop.routeId, { $addToSet: { stopIds: stop._id } });
 
   res.status(201).json({ success: true, data: stop });
@@ -36,10 +68,24 @@ export const getStops = asyncHandler(async (req, res) => {
 });
 
 export const updateStop = asyncHandler(async (req, res) => {
-  const stop = await Stop.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  const stop = await Stop.findById(req.params.id);
   if (!stop) {
     throw new ApiError(404, "Stop not found");
   }
+
+  const nextRouteId = req.body.routeId ?? stop.routeId;
+  const nextStopOrder = req.body.stopOrder ?? stop.stopOrder;
+  const normalizedStopOrder = await assertUniqueStopOrder(nextRouteId, nextStopOrder, stop._id);
+
+  Object.assign(stop, {
+    stopName: req.body.stopName ?? stop.stopName,
+    stopOrder: normalizedStopOrder,
+    status: req.body.status ?? stop.status,
+    routeId: nextRouteId
+  });
+
+  await stop.save();
+
   res.json({ success: true, data: stop });
 });
 
@@ -64,7 +110,11 @@ export const updateMonitorStop = asyncHandler(async (req, res) => {
 
   Object.assign(stop, {
     stopName: req.body.stopName ?? stop.stopName,
-    stopOrder: req.body.stopOrder ?? stop.stopOrder,
+    stopOrder: await assertUniqueStopOrder(
+      req.body.routeId ?? stop.routeId,
+      req.body.stopOrder ?? stop.stopOrder,
+      stop._id
+    ),
     status: req.body.status ?? stop.status,
     routeId: req.body.routeId ?? stop.routeId
   });

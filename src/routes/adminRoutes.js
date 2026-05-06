@@ -19,6 +19,15 @@ import {
 import { getAdminSummary } from "../controllers/dashboardController.js";
 import { createRouteChangeRequest, getRequests, reviewRequest } from "../controllers/requestController.js";
 import { importEmployees } from "../controllers/importController.js";
+import {
+  exportMonthlyTransportReport,
+  getMonthlyTransportReport,
+  getReportCompanies,
+  getReportHistory,
+  getReportSchedulerStatus,
+  sendMonthlyTransportReportNow,
+  updateReportCompany
+} from "../controllers/reportController.js";
 
 const router = Router();
 
@@ -53,5 +62,13 @@ router.get("/requests", getRequests);
 router.patch("/requests/:id/review", reviewRequest);
 
 router.post("/imports/employees", importEmployees);
+
+router.get("/reports/transport/monthly", getMonthlyTransportReport);
+router.get("/reports/transport/export", exportMonthlyTransportReport);
+router.post("/reports/transport/send", sendMonthlyTransportReportNow);
+router.get("/reports/transport/history", getReportHistory);
+router.get("/reports/transport/companies", getReportCompanies);
+router.put("/reports/transport/companies/:id", updateReportCompany);
+router.get("/reports/transport/scheduler-status", getReportSchedulerStatus);
 
 export default router;
